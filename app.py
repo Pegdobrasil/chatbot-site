@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import os
-import openai
+from openai import OpenAI
 
 app = Flask(__name__)
+CORS(app)
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/")
 def home():
@@ -15,23 +17,23 @@ def chat():
     data = request.get_json()
     mensagem = data.get("mensagem", "")
 
-    resposta = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {
-                "role": "system",
-                "content": "Você é um atendente virtual educado, direto e profissional."
-            },
-            {
-                "role": "user",
-                "content": mensagem
-            }
-        ]
-    )
+    try:
+        resposta = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Você é um atendente virtual educado e profissional."},
+                {"role": "user", "content": mensagem}
+            ]
+        )
 
-    return jsonify({
-        "resposta": resposta.choices[0].message.content
-    })
+        return jsonify({
+            "resposta": resposta.choices[0].message.content
+        })
+
+    except Exception as e:
+        return jsonify({
+            "erro": str(e)
+        }), 500
 
 if __name__ == "__main__":
     app.run()
